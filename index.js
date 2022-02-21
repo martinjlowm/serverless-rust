@@ -125,7 +125,8 @@ class RustPlugin {
       return target_directory_run;
     }
     let target_directory = JSON.parse(target_directory_run.stdout).target_directory;
-    let executable = target_directory;
+    console.log(target_directory_run)
+    let executable = target_directory.toString();
     if (MUSL_PLATFORMS.includes(platform)) {
       let target = (funcArgs || {}).target || this.custom.target
       executable = path.join(executable, target ? target : "x86_64-unknown-linux-musl");
