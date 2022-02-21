@@ -162,6 +162,7 @@ class RustPlugin {
     }
     // now rename binary and zip
     const sourceDir = this.localSourceDir(funcArgs, profile, platform());
+    console.log(sourceDir)
     const zip = new AdmZip();
     zip.addFile(
       "bootstrap",
