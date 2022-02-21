@@ -164,9 +164,11 @@ class RustPlugin {
     const sourceDir = this.localSourceDir(funcArgs, profile, platform());
     console.log(sourceDir)
     const zip = new AdmZip();
+    const binaryPath = path.join(sourceDir, binary);
+    console.log(binaryPath)
     zip.addFile(
       "bootstrap",
-      readFileSync(path.join(sourceDir, binary)),
+      readFileSync(binaryPath),
       "",
       0o755
     );
