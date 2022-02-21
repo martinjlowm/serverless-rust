@@ -10,8 +10,6 @@ const path = require("path");
 const AdmZip = require("adm-zip");
 const { mkdirSync, writeFileSync, readFileSync } = require("fs");
 
-const DEFAULT_DOCKER_TAG = "latest";
-const DEFAULT_DOCKER_IMAGE = "softprops/lambda-rust";
 const RUST_RUNTIME = "rust";
 const BASE_RUNTIME = "provided.al2";
 const NO_OUTPUT_CAPTURE = { stdio: ["ignore", process.stdout, process.stderr] };
@@ -44,12 +42,9 @@ class RustPlugin {
     this.custom = Object.assign(
       {
         cargoFlags: "",
-        dockerTag: DEFAULT_DOCKER_TAG,
-        dockerImage: DEFAULT_DOCKER_IMAGE,
-        dockerless: false,
       },
       (this.serverless.service.custom && this.serverless.service.custom.rust) ||
-        {}
+      {}
     );
 
     // Docker can't access resources outside of the current build directory.
@@ -77,7 +72,7 @@ class RustPlugin {
 
     let target = (funcArgs || {}).target || this.custom.target
 
-    const targetArgs = 
+    const targetArgs =
       target ?
         ['--target', target]
         : MUSL_PLATFORMS.includes(platform)
@@ -106,17 +101,17 @@ class RustPlugin {
         }
         : "win32" === platform
           ? {
-              RUSTFLAGS: (env["RUSTFLAGS"] || "") + " -Clinker=rust-lld",
-              TARGET_CC: "rust-lld",
-              CC_x86_64_unknown_linux_musl: "rust-lld",
-            }
+            RUSTFLAGS: (env["RUSTFLAGS"] || "") + " -Clinker=rust-lld",
+            TARGET_CC: "rust-lld",
+            CC_x86_64_unknown_linux_musl: "rust-lld",
+          }
           : "darwin" === platform
             ? {
-                RUSTFLAGS:
-                  (env["RUSTFLAGS"] || "") + " -Clinker=x86_64-linux-musl-gcc",
-                TARGET_CC: "x86_64-linux-musl-gcc",
-                CC_x86_64_unknown_linux_musl: "x86_64-linux-musl-gcc",
-              }
+              RUSTFLAGS:
+                (env["RUSTFLAGS"] || "") + " -Clinker=x86_64-linux-musl-gcc",
+              TARGET_CC: "x86_64-linux-musl-gcc",
+              CC_x86_64_unknown_linux_musl: "x86_64-linux-musl-gcc",
+            }
             : {};
     return {
       ...defaultEnv,
@@ -125,7 +120,12 @@ class RustPlugin {
   }
 
   localSourceDir(funcArgs, profile, platform) {
-    let executable = "target";
+    let target_directory_run = spawnSync('cargo metadata');
+    if (target_directory_run.error || target_directory_run.status > 0) {
+      return target_directory_run;
+    }
+    let target_directory = JSON.parse(target_directory_run.stdout).target_directory;
+    let executable = target_directory;
     if (MUSL_PLATFORMS.includes(platform)) {
       let target = (funcArgs || {}).target || this.custom.target
       executable = path.join(executable, target ? target : "x86_64-unknown-linux-musl");
@@ -174,7 +174,7 @@ class RustPlugin {
     const targetDir = this.localArtifactDir(profile);
     try {
       mkdirSync(targetDir, { recursive: true });
-    } catch {}
+    } catch { }
     try {
       writeFileSync(path.join(targetDir, `${binary}.zip`), zip.toBuffer());
       return {};
@@ -185,78 +185,6 @@ class RustPlugin {
         status: 1,
       };
     }
-  }
-
-  dockerBuildArgs(
-    funcArgs,
-    cargoPackage,
-    binary,
-    profile,
-    srcPath,
-    cargoRegistry,
-    cargoDownloads,
-    env
-  ) {
-    const defaultArgs = [
-      "run",
-      "--rm",
-      "-t",
-      "-e",
-      `BIN=${binary}`,
-      `-v`,
-      `${srcPath}:/code`,
-      `-v`,
-      `${cargoRegistry}:/cargo/registry`,
-      `-v`,
-      `${cargoDownloads}:/cargo/git`,
-    ];
-    const customArgs = (env["SLS_DOCKER_ARGS"] || "").split(" ") || [];
-    let cargoFlags = (funcArgs || {}).cargoFlags || this.custom.cargoFlags;
-    if (profile) {
-      // release or dev
-      customArgs.push("-e", `PROFILE=${profile}`);
-    }
-    if (cargoPackage != undefined) {
-      if (cargoFlags) {
-        cargoFlags = `${cargoFlags} -p ${cargoPackage}`;
-      } else {
-        cargoFlags = ` -p ${cargoPackage}`;
-      }
-    }
-    if (cargoFlags) {
-      // --features awesome-feature, ect
-      customArgs.push("-e", `CARGO_FLAGS=${cargoFlags}`);
-    }
-    const dockerTag = (funcArgs || {}).dockerTag || this.custom.dockerTag;
-    const dockerImage = (funcArgs || {}).dockerImage || this.custom.dockerImage;
-
-    return [
-      ...defaultArgs,
-      ...customArgs,
-      `${dockerImage}:${dockerTag}`,
-    ].filter((i) => i);
-  }
-
-  dockerBuild(funcArgs, cargoPackage, binary, profile) {
-    const cargoHome = process.env.CARGO_HOME || path.join(homedir(), ".cargo");
-    const cargoRegistry = path.join(cargoHome, "registry");
-    const cargoDownloads = path.join(cargoHome, "git");
-
-    const dockerCLI = process.env["SLS_DOCKER_CLI"] || "docker";
-    const args = this.dockerBuildArgs(
-      funcArgs,
-      cargoPackage,
-      binary,
-      profile,
-      this.srcPath,
-      cargoRegistry,
-      cargoDownloads,
-      process.env
-    );
-
-    this.serverless.cli.log("Running containerized build");
-
-    return spawnSync(dockerCLI, args, NO_OUTPUT_CAPTURE);
   }
 
   functions() {
@@ -273,10 +201,6 @@ class RustPlugin {
       binary = cargoPackage;
     }
     return { cargoPackage, binary };
-  }
-
-  buildLocally(func) {
-    return (func.rust || {}).dockerless || this.custom.dockerless;
   }
 
   /** the entry point for building functions */
@@ -299,9 +223,7 @@ class RustPlugin {
       this.serverless.cli.log(`Building Rust ${func.handler} func...`);
       let profile = (func.rust || {}).profile || this.custom.profile;
 
-      const res = this.buildLocally(func)
-        ? this.localBuild(func.rust, cargoPackage, binary, profile)
-        : this.dockerBuild(func.rust, cargoPackage, binary, profile);
+      const res = this.localBuild(func.rust, cargoPackage, binary, profile);
       if (res.error || res.status > 0) {
         this.serverless.cli.log(
           `Rust build encountered an error: ${res.error} ${res.status}.`
@@ -336,8 +258,8 @@ class RustPlugin {
     if (!rustFunctionsFound) {
       throw new Error(
         `Error: no Rust functions found. ` +
-          `Use 'runtime: ${RUST_RUNTIME}' in global or ` +
-          `function configuration to use this plugin.`
+        `Use 'runtime: ${RUST_RUNTIME}' in global or ` +
+        `function configuration to use this plugin.`
       );
     }
   }
