@@ -170,8 +170,11 @@ class RustPlugin {
     const targetDir = this.localArtifactDir(profile);
     mkdirSync(targetDir, { recursive: true });
     zip.writeZip(path.join(targetDir, `${binary}.zip`), err => {
-      this.serverless.cli.log(`Error zipping artifact ${err}`);
+      if (err) {
+        this.serverless.cli.log(`Error zipping artifact ${err}`);
+      }
     });
+    return {}
   }
 
   functions() {
