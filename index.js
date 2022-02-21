@@ -121,11 +121,8 @@ class RustPlugin {
 
   localSourceDir(funcArgs, profile, platform) {
     let target_directory_run = spawnSync('cargo', ['metadata']);
-    if (target_directory_run.error || target_directory_run.status > 0) {
-      throw target_directory_run.error;
-    }
-    let target_directory = JSON.parse(target_directory_run.stdout).target_directory;
     console.log(target_directory_run)
+    let target_directory = JSON.parse(target_directory_run.stdout).target_directory;
     let executable = target_directory.toString();
     if (MUSL_PLATFORMS.includes(platform)) {
       let target = (funcArgs || {}).target || this.custom.target
