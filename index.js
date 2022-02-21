@@ -120,7 +120,7 @@ class RustPlugin {
   }
 
   localSourceDir(funcArgs, profile, platform) {
-    let target_directory_run = spawnSync('cargo metadata');
+    let target_directory_run = spawnSync('cargo', ['metadata']);
     if (target_directory_run.error || target_directory_run.status > 0) {
       return target_directory_run;
     }
