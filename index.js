@@ -122,7 +122,7 @@ class RustPlugin {
   localSourceDir(funcArgs, profile, platform) {
     let target_directory_run = spawnSync('cargo', ['metadata']);
     if (target_directory_run.error || target_directory_run.status > 0) {
-      return target_directory_run;
+      throw error;
     }
     let target_directory = JSON.parse(target_directory_run.stdout).target_directory;
     console.log(target_directory_run)
