@@ -120,7 +120,7 @@ class RustPlugin {
   }
 
   localSourceDir(funcArgs, profile, platform) {
-    let target_directory_run = spawnSync('cargo', ['metadata']);
+    let target_directory_run = spawnSync('cargo', ['metadata'], { maxBuffer: 1024 * 1024 * 100 });
     console.log(target_directory_run)
     let target_directory = JSON.parse(target_directory_run.stdout).target_directory;
     let executable = target_directory.toString();
