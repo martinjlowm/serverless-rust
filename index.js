@@ -121,7 +121,6 @@ class RustPlugin {
 
   localSourceDir(funcArgs, profile, platform) {
     let target_directory_run = spawnSync('cargo', ['metadata'], { maxBuffer: 1024 * 1024 * 100 });
-    console.log(target_directory_run)
     let target_directory = JSON.parse(target_directory_run.stdout).target_directory;
     let executable = target_directory.toString();
     if (MUSL_PLATFORMS.includes(platform)) {
@@ -162,10 +161,8 @@ class RustPlugin {
     }
     // now rename binary and zip
     const sourceDir = this.localSourceDir(funcArgs, profile, platform());
-    console.log(sourceDir)
     const zip = new AdmZip();
     const binaryPath = path.join(sourceDir, binary);
-    console.log(binaryPath)
     zip.addLocalFile(binaryPath, '', "bootstrap");
     const targetDir = this.localArtifactDir(profile);
     mkdirSync(targetDir, { recursive: true });
