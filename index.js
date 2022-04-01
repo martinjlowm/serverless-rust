@@ -60,6 +60,11 @@ class RustPlugin {
     this.serverless.service.package.excludeDevDependencies = false;
   }
 
+  getTarget() {
+    // use custom target if set
+    return this.custom.target || (funcArgs || {}).target;
+  }
+
   localBuildArgs(funcArgs, cargoPackage, binary, profile, platform) {
     const defaultArgs = ["zigbuild", "-p", cargoPackage];
     const profileArgs = profile !== "dev" ? ["--release"] : [];
@@ -69,8 +74,7 @@ class RustPlugin {
       ""
     ).split(/\s+/);
 
-    // use custom target if set
-    let target = this.custom.target || (funcArgs || {}).target;
+    let target = this.getTarget();
 
     const targetArgs =
       target ?
@@ -97,6 +101,8 @@ class RustPlugin {
     let target_directory_run = spawnSync('cargo', ['metadata'], { maxBuffer: 1024 * 1024 * 100 });
     let target_directory = JSON.parse(target_directory_run.stdout).target_directory;
     let executable = target_directory.toString();
+    let target = this.getTarget();
+    executable = path.join(executable, target);
     return path.join(executable, profile !== "dev" ? "release" : "debug");
   }
 
