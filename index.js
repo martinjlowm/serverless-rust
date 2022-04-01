@@ -68,6 +68,7 @@ class RustPlugin {
   getTarget_without_zig_gnu_version() {
     // strip .2.17 from `aarch64-unknown-linux-gnu.2.17`
     const target = this.getTarget().split('.')[0]
+    return target;
   }
 
   localBuildArgs(funcArgs, cargoPackage, binary, profile, platform) {
