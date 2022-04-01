@@ -65,6 +65,11 @@ class RustPlugin {
     return this.custom.target || (funcArgs || {}).target;
   }
 
+  getTarget_without_zig_gnu_version() {
+    // strip .2.17 from `aarch64-unknown-linux-gnu.2.17`
+    const target = this.getTarget().split['.'][0]
+  }
+
   localBuildArgs(funcArgs, cargoPackage, binary, profile, platform) {
     const defaultArgs = ["zigbuild", "-p", cargoPackage];
     const profileArgs = profile !== "dev" ? ["--release"] : [];
@@ -101,7 +106,7 @@ class RustPlugin {
     let target_directory_run = spawnSync('cargo', ['metadata'], { maxBuffer: 1024 * 1024 * 100 });
     let target_directory = JSON.parse(target_directory_run.stdout).target_directory;
     let executable = target_directory.toString();
-    let target = this.getTarget();
+    let target = this.getTarget_without_zig_gnu_version();
     executable = path.join(executable, target);
     return path.join(executable, profile !== "dev" ? "release" : "debug");
   }
