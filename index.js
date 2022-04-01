@@ -61,7 +61,7 @@ class RustPlugin {
   }
 
   localBuildArgs(funcArgs, cargoPackage, binary, profile, platform) {
-    const defaultArgs = ["build", "-p", cargoPackage];
+    const defaultArgs = ["zigbuild", "-p", cargoPackage];
     const profileArgs = profile !== "dev" ? ["--release"] : [];
     const cargoFlags = (
       (funcArgs || {}).cargoFlags ||
@@ -69,9 +69,18 @@ class RustPlugin {
       ""
     ).split(/\s+/);
 
+    // use custom target if set
+    let target = this.custom.target || (funcArgs || {}).target;
+
+    const targetArgs =
+      target ?
+        ['--target', target]
+        : [];
+
     return [
       ...defaultArgs,
       ...profileArgs,
+      ...targetArgs,
       ...cargoFlags,
     ].filter((i) => i);
   }
@@ -109,7 +118,7 @@ class RustPlugin {
     );
 
     const env = this.localBuildEnv(funcArgs, process.env, platform());
-    this.serverless.cli.log(`Running local cargo build on ${platform()}`);
+    this.serverless.cli.log(`Running local cargo build on ${platform()} with args:`, args.join(' '));
 
     const buildResult = spawnSync("cargo", args, {
       ...NO_OUTPUT_CAPTURE,
