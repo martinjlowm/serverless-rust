@@ -69,19 +69,9 @@ class RustPlugin {
       ""
     ).split(/\s+/);
 
-
-    let target = (funcArgs || {}).target || this.custom.target
-
-    const targetArgs =
-      target ?
-        ['--target', target]
-        : MUSL_PLATFORMS.includes(platform)
-          ? ["--target", "x86_64-unknown-linux-musl"]
-          : [];
     return [
       ...defaultArgs,
       ...profileArgs,
-      ...targetArgs,
       ...cargoFlags,
     ].filter((i) => i);
   }
@@ -89,33 +79,8 @@ class RustPlugin {
   localBuildEnv(funcArgs, env, platform) {
     const defaultEnv = { ...env };
 
-    let target = (funcArgs || {}).target || this.custom.target
-    let linker = (funcArgs || {}).linker || this.custom.linker
-
-    const platformEnv =
-      linker ?
-        {
-          RUSTFLAGS: (env["RUSTFLAGS"] || "") + ` -Clinker=${linker}`,
-          TARGET_CC: linker,
-          [`CC_${target || 'x86_64_unknown_linux_musl'}`]: linker,
-        }
-        : "win32" === platform
-          ? {
-            RUSTFLAGS: (env["RUSTFLAGS"] || "") + " -Clinker=rust-lld",
-            TARGET_CC: "rust-lld",
-            CC_x86_64_unknown_linux_musl: "rust-lld",
-          }
-          : "darwin" === platform
-            ? {
-              RUSTFLAGS:
-                (env["RUSTFLAGS"] || "") + " -Clinker=x86_64-linux-musl-gcc",
-              TARGET_CC: "x86_64-linux-musl-gcc",
-              CC_x86_64_unknown_linux_musl: "x86_64-linux-musl-gcc",
-            }
-            : {};
     return {
       ...defaultEnv,
-      ...platformEnv,
     };
   }
 
@@ -123,10 +88,6 @@ class RustPlugin {
     let target_directory_run = spawnSync('cargo', ['metadata'], { maxBuffer: 1024 * 1024 * 100 });
     let target_directory = JSON.parse(target_directory_run.stdout).target_directory;
     let executable = target_directory.toString();
-    if (MUSL_PLATFORMS.includes(platform)) {
-      let target = (funcArgs || {}).target || this.custom.target
-      executable = path.join(executable, target ? target : "x86_64-unknown-linux-musl");
-    }
     return path.join(executable, profile !== "dev" ? "release" : "debug");
   }
 
