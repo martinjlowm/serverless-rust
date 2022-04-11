@@ -191,6 +191,13 @@ class RustPlugin {
       rustFunctionsFound = true;
       const { cargoPackage, binary } = this.cargoBinary(func);
 
+      this.serverless.cli.log(`Making sure Rust target ${this.getTarget_without_zig_gnu_version()} is installed`);
+      const rustupResult = spawnSync("rustup", ["target", "install", this.getTarget_without_zig_gnu_version()]);
+      if (rustupResult.error || rustupResult.status > 0) {
+        throw new Error(rustupResult.error);
+      }
+
+
       this.serverless.cli.log(`Building Rust ${func.handler} func...`);
       let profile = (func.rust || {}).profile || this.custom.profile;
 
