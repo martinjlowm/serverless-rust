@@ -26,12 +26,12 @@
   },
   "homepage": "https://github.com/softprops/serverless-rust#readme",
   "dependencies": {
+    "adm-zip": "^0.5.9",
     "fs-copy-file-sync": "^1.1.1",
     "fs-extra": "^9.0.0",
     "serverless": "^3.7"
   },
   "devDependencies": {
-    "adm-zip": "^0.5.9",
     "jest": "^26.0.1",
     "jest-circus": "^26.0.1",
     "prettier": "^2.0.5"
