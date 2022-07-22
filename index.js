@@ -146,7 +146,7 @@ class RustPlugin {
     const zip = new AdmZip();
     const binaryPath = path.join(sourceDir, binary);
     this.serverless.cli.log(`Binary at ${binaryPath}`);
-    zip.addLocalFile(binaryPath, '', "bootstrap");
+    zip.addFile("bootstrap", readFileSync(binaryPath), "", 0o755);
     const targetDir = this.localArtifactDir(profile);
     this.serverless.cli.log(`Artifacts at ${targetDir}`);
     mkdirSync(targetDir, { recursive: true });
